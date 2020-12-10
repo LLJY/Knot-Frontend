@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "1029482459631",
+    "firebase_url": "https://mcsv-firebase-service.firebaseio.com",
+    "project_id": "mcsv-firebase-service",
+    "storage_bucket": "mcsv-firebase-service.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1029482459631:android:4a0f7d34706c9d8762061a",
+        "android_client_info": {
+          "package_name": "com.lucas.knot"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1029482459631-1ak0dtb7mqa7pb28ks4j4ne9jc8defk6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAoeJQOGOtN6EklHef7v4O__cRuqIJkEwI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1029482459631-1ak0dtb7mqa7pb28ks4j4ne9jc8defk6.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

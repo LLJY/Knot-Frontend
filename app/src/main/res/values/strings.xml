@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">Knot</string>
+    <string name="phone_number_sign_in_desc">Enter your phone number to receive a one time password.</string>
+    <string name="phone_number_hint">Phone Number</string>
+    <string name="otp_warn">Warning, DO NOT SHARE your OTP with anyone. Not even us. We don\'t want it.</string>
+    <string name="otp_time_remaining">Time Remaining: %1$s</string>
+    <string name="update_profile_username">Username</string>
+    <string name="update_profile_bio">Bio</string>
+    <string name="loading_text">Loading</string>
+    <string name="loading_description">Please wait...</string>
+    <string name="snackbar_generic_error">Oops! Something went wrong!</string>
+    <string name="snackbar_otp_error">Invalid OTP!</string>
+    <string name="title_chat_list">Chats</string>
+    <string name="title_chat_detail">Chat Detail</string>
+</resources>

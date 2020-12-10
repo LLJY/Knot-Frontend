@@ -21,7 +21,7 @@ class UserRepository @Inject constructor(private val identityStub: IdentityGrpc.
         return result.timeLeft
     }
 
-    suspend fun verifyOTP(phoneNumber: String, otp: Short): OTPVerification {
+    suspend fun verifyOTP(phoneNumber: String, otp: Int): OTPVerification {
         val request = IdentityOuterClass.VerifyOTPRequest.newBuilder()
                 .setOtp(otp.toString())
                 .setPhoneNumber(phoneNumber)
