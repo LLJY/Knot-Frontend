@@ -3,6 +3,8 @@ package com.lucas.knot
 import android.app.Application
 import android.app.ProgressDialog
 import android.content.Context
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.storage.FirebaseStorage
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -46,9 +48,19 @@ object NetworkModule {
     @Provides
     fun providesUserService(): UserGrpc.UserBlockingStub {
         val channel = ManagedChannelBuilder.forAddress(baseUrl, 8001)
-                .usePlaintext()
-                .build()
+            .usePlaintext()
+            .build()
         return newUserStub(channel)
+    }
+
+    // although firebase classes are singletons, it is nicer to just use constructor injection
+    @Provides
+    fun providesFirebaseAuth(): FirebaseAuth {
+        return FirebaseAuth.getInstance()
+    }
+
+    fun providesFirebaseStorage(): FirebaseStorage {
+        return FirebaseStorage.getInstance()
     }
 }
 
