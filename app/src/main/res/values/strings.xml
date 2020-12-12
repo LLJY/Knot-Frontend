@@ -12,4 +12,5 @@
     <string name="snackbar_otp_error">Invalid OTP!</string>
     <string name="title_chat_list">Chats</string>
     <string name="title_chat_detail">Chat Detail</string>
+    <string name="send_a_text_hint">Send a text...</string>
 </resources>

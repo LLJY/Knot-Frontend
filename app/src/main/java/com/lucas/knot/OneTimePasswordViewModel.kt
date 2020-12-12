@@ -6,10 +6,12 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.liveData
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.tasks.await
 
 
-class OneTimePasswordViewModel @ViewModelInject constructor(private val userRepository: UserRepository, @Assisted private val savedStateHandle: SavedStateHandle) : ViewModel() {
+class OneTimePasswordViewModel @ViewModelInject constructor(private val userRepository: UserRepository, @Assisted private val savedStateHandle: SavedStateHandle, private val firebaseAuth: FirebaseAuth) : ViewModel() {
     // to set the time when the OTP was requested so the next activity can initiate a countdown
     var OTP: Int = 0
     fun setOTPTime(timeRemaining: Long) {
@@ -35,7 +37,12 @@ class OneTimePasswordViewModel @ViewModelInject constructor(private val userRepo
     }
 
     fun verifyOTP(phoneNumber: String, otp: Int): LiveData<OTPVerification> = liveData(Dispatchers.IO) {
-        emit(userRepository.verifyOTP(phoneNumber, otp))
+        val result = userRepository.verifyOTP(phoneNumber, otp)
+        // if the sign in is successful, sign in with the token
+        if (result.isSuccessful) {
+            firebaseAuth.signInWithCustomToken(result.token).await()
+        }
+        emit(result)
     }
 
 }

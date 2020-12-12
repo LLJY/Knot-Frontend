@@ -1,5 +1,9 @@
 package com.lucas.knot
 
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.liveData
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import services.IdentityGrpc
 import services.IdentityOuterClass
 import services.UserGrpc
@@ -11,32 +15,48 @@ import javax.inject.Singleton
 data class OTPVerification(val token: String, val isSuccessful: Boolean, val isSignUp: Boolean)
 
 @Singleton
-class UserRepository @Inject constructor(private val identityStub: IdentityGrpc.IdentityBlockingStub, private val userStub: UserGrpc.UserBlockingStub) {
+class UserRepository @Inject constructor(private val identityStub: IdentityGrpc.IdentityBlockingStub, private val userStub: UserGrpc.UserBlockingStub, private val androidDatabase: Database) {
 
-    suspend fun requestOTP(phoneNumber: String): Int {
+    suspend fun requestOTP(phoneNumber: String): Int = withContext(Dispatchers.IO) {
         val request = IdentityOuterClass.OTPRequest.newBuilder()
                 .setPhoneNumber(phoneNumber)
                 .build()
         val result = identityStub.requestOTP(request)
-        return result.timeLeft
+        result.timeLeft
     }
 
-    suspend fun verifyOTP(phoneNumber: String, otp: Int): OTPVerification {
+    suspend fun verifyOTP(phoneNumber: String, otp: Int): OTPVerification = withContext(Dispatchers.IO) {
         val request = IdentityOuterClass.VerifyOTPRequest.newBuilder()
                 .setOtp(otp.toString())
                 .setPhoneNumber(phoneNumber)
                 .build()
         val result = identityStub.verifyOTP(request)
-        return OTPVerification(result.token, result.isSuccessful, result.isSignUp)
+        OTPVerification(result.token, result.isSuccessful, result.isSignUp)
     }
 
-    suspend fun getUserInfo(userId: String) {
-        val request = UserOuterClass.GetUserInfoRequest.newBuilder()
+    fun getUserInfo(userId: String): LiveData<UserInfo> = liveData(Dispatchers.IO) {
+        val userInfo = androidDatabase.usersQueries.getUserById(userId).executeAsOneOrNull()
+        // if user does not exist in database, call from api
+        // TODO return live data so we can call the API anyway and provide updates later
+        if (userInfo == null) {
+            emit(getUserInfoFromAPI(userId))
+        } else {
+            emit(userInfo.mapToAppModel())
+            // if database contains information, emit the API data later so it will automatically update
+            emit(getUserInfoFromAPI(userId))
+        }
+    }
+
+    /**
+     * Gets the user information from the API and then storing it in database
+     * useful for updating user information in the background
+     */
+    suspend fun getUserInfoFromAPI(userId: String): UserInfo = withContext(Dispatchers.IO) {
+        val userInfoRequest = UserOuterClass.GetUserInfoRequest.newBuilder()
                 .setUserid(userId)
                 .build()
-        val result = userStub.getUserInfo(request)
-        TODO("return user info")
+        val response = userStub.getUserInfo(userInfoRequest)
+        androidDatabase.usersQueries.insertOrReplace(userInfoRequest.userid, response.phoneNumber, response.userName, response.bio, if (response.isExists) 1 else 0, response.profilePictureUri)
+        response.mapToAppModel()
     }
-
-
 }

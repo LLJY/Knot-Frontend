@@ -5,6 +5,7 @@ import android.app.ProgressDialog
 import android.content.Context
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.storage.FirebaseStorage
+import com.squareup.sqldelight.android.AndroidSqliteDriver
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -12,11 +13,14 @@ import dagger.hilt.android.HiltAndroidApp
 import dagger.hilt.android.components.ActivityComponent
 import dagger.hilt.android.components.ApplicationComponent
 import dagger.hilt.android.qualifiers.ActivityContext
+import dagger.hilt.android.qualifiers.ApplicationContext
 import io.grpc.ManagedChannelBuilder
 import services.ChatGrpc
 import services.IdentityGrpc
 import services.UserGrpc
+import javax.inject.Singleton
 import services.ChatGrpc.newBlockingStub as newChatStub
+import services.ChatGrpc.newStub as newChatNormalStub
 import services.IdentityGrpc.newBlockingStub as newIdentityStub
 import services.UserGrpc.newBlockingStub as newUserStub
 
@@ -27,7 +31,7 @@ class MainApplication : Application()
 @Module
 @InstallIn(ApplicationComponent::class)
 object NetworkModule {
-    val baseUrl = "10.0.2.2"
+    private const val baseUrl = "10.0.2.2"
 
     @Provides
     fun providesIdentityService(): IdentityGrpc.IdentityBlockingStub {
@@ -46,10 +50,18 @@ object NetworkModule {
     }
 
     @Provides
+    fun providdesAsyncChatService(): ChatGrpc.ChatStub {
+        val channel = ManagedChannelBuilder.forAddress(baseUrl, 7001)
+                .usePlaintext()
+                .build()
+        return newChatNormalStub(channel)
+    }
+
+    @Provides
     fun providesUserService(): UserGrpc.UserBlockingStub {
         val channel = ManagedChannelBuilder.forAddress(baseUrl, 8001)
-            .usePlaintext()
-            .build()
+                .usePlaintext()
+                .build()
         return newUserStub(channel)
     }
 
@@ -61,6 +73,22 @@ object NetworkModule {
 
     fun providesFirebaseStorage(): FirebaseStorage {
         return FirebaseStorage.getInstance()
+    }
+}
+
+@Module
+@InstallIn(ApplicationComponent::class)
+object StorageModule {
+    @Provides
+    @Singleton
+    fun provideSQLDriver(@ApplicationContext context: Context): AndroidSqliteDriver {
+        return AndroidSqliteDriver(Database.Schema, context, "cache.db")
+    }
+
+    @Provides
+    @Singleton
+    fun provideDatabase(androidSqliteDriver: AndroidSqliteDriver): Database {
+        return Database(androidSqliteDriver)
     }
 }
 

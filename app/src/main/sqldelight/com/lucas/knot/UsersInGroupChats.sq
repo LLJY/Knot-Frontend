@@ -1,0 +1,18 @@
+CREATE TABLE UsersInGroupChats (
+    id INTEGER NOT NULL UNIQUE PRIMARY KEY AUTOINCREMENT,
+    group_id_fk TEXT NOT NULL,
+    user_id_fk TEXT NOT NULL,
+    FOREIGN KEY (group_id_fk) REFERENCES GroupChats(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id_fk) REFERENCES Users(id) ON DELETE CASCADE
+);
+
+getGroupMembersByGroupId:
+SELECT user_id_fk FROM UsersInGroupChats
+WHERE group_id_fk = ?;
+
+insertGroupMemberAndGroupId:
+INSERT INTO UsersInGroupChats(group_id_fk, user_id_fk)
+VALUES(?,?);
+
+deleteAllFields:
+DELETE FROM UsersInGroupChats;

@@ -1,0 +1,19 @@
+CREATE TABLE Users (
+    id TEXT NOT NULL UNIQUE PRIMARY KEY,
+    phone_number TEXT NOT NULL,
+    user_name TEXT NOT NULL,
+    bio TEXT,
+    isExists INTEGER NOT NULL,
+    profilePictureURL TEXT
+);
+
+getUserById:
+SELECT * FROM Users
+WHERE id = ?;
+
+insertOrReplace:
+INSERT OR REPLACE INTO Users(id, phone_number, user_name, bio, isExists, profilePictureURL)
+VALUES(?,?,?,?,?,?);
+
+deleteAllFields:
+DELETE FROM Users;

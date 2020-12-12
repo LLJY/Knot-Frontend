@@ -8,6 +8,7 @@ plugins {
     id "androidx.navigation.safeargs.kotlin"
     id 'kotlin-kapt'
     id 'com.google.protobuf'
+    id 'com.squareup.sqldelight'
 }
 
 android {
@@ -94,6 +95,10 @@ dependencies {
     implementation "androidx.fragment:fragment-ktx:1.2.5"
     implementation 'com.google.firebase:firebase-auth:20.0.1'
     implementation 'androidx.recyclerview:recyclerview:1.1.0'
+    implementation 'com.google.firebase:firebase-storage:19.2.0'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.1.1'
+    implementation "io.coil-kt:coil:1.1.0"
+    implementation "com.squareup.sqldelight:android-driver:1.4.4"
 
 
     testImplementation 'junit:junit:4.13.1'

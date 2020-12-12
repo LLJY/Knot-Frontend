@@ -1,0 +1,45 @@
+CREATE TABLE Chats (
+    id INTEGER NOT NULL UNIQUE PRIMARY KEY AUTOINCREMENT,
+    user_id_fk TEXT,
+    group_id_fk TEXT,
+    FOREIGN KEY (user_id_fk) REFERENCES Users(id) ON DELETE CASCADE,
+    FOREIGN KEY (group_id_fk) REFERENCES GroupChats(id) ON DELETE CASCADE
+);
+
+getAll:
+SELECT * FROM Chats C
+LEFT JOIN Users U
+ON C.user_id_fk = U.id
+LEFT JOIN GroupChats G
+ON C.group_id_fk = G.id;
+
+getAllById:
+SELECT * FROM Chats C
+LEFT JOIN Users U
+ON C.user_id_fk = U.id
+LEFT JOIN GroupChats G
+ON C.group_id_fk = G.id
+WHERE C.id = ?;
+
+getChatIdByUserId:
+SELECT id FROM Chats
+WHERE user_id_fk = ?;
+
+getChatIdByGroupId:
+SELECT id FROM Chats
+WHERE group_id_fk = ?;
+
+
+insertOrReplace:
+INSERT OR REPLACE INTO Chats(user_id_fk,group_id_fk)
+VALUES (?, ?);
+
+deleteById:
+DELETE FROM Chats
+WHERE id = ?;
+
+deleteAllFields:
+DELETE FROM Chats;
+
+lastInsertedRowId:
+SELECT last_insert_rowid();

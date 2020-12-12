@@ -1,0 +1,39 @@
+CREATE TABLE Messages (
+    id TEXT NOT NULL UNIQUE PRIMARY KEY,
+    media_id_fk INTEGER,
+    message TEXT NOT NULL,
+    reply_message_id_fk TEXT,
+    is_forward INTEGER,
+    author_id_fk TEXT NOT NULL,
+    group_id_fk TEXT,
+    date_posted INTEGER,
+    reciever_user_id TEXT,
+    chat_id_fk INTEGER,
+    FOREIGN KEY (media_id_fk) REFERENCES Medias(id) ON DELETE CASCADE,
+    FOREIGN KEY (reply_message_id_fk) REFERENCES Messages(id) ON DELETE CASCADE,
+    FOREIGN KEY (author_id_fk) REFERENCES Users(id) ON DELETE CASCADE,
+    FOREIGN KEY (group_id_fk) REFERENCES GroupChats(id) ON DELETE CASCADE,
+    FOREIGN KEY (reciever_user_id) REFERENCES Users(id)ON DELETE CASCADE,
+    FOREIGN KEY (chat_id_fk) REFERENCES Chats(id) ON DELETE CASCADE
+);
+getMessageById:
+SELECT * FROM Messages
+WHERE id=?;
+
+getAllGroupMessages:
+SELECT * FROM Messages
+WHERE group_id_fk = ?;
+
+getAllMessages:
+SELECT * FROM Messages;
+
+getAllChatMessages:
+SELECT * FROM Messages
+WHERE chat_id_fk = ?;
+
+insertOrReplaceMessage:
+INSERT OR REPLACE INTO Messages(id, media_id_fk, message, reply_message_id_fk, is_forward, author_id_fk, group_id_fk, date_posted, reciever_user_id, chat_id_fk)
+VALUES(?,?,?,?,?,?,?,?,?,?);
+
+deleteAllFields:
+DELETE FROM Messages;
