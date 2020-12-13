@@ -11,6 +11,7 @@ import androidx.core.view.isVisible
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import coil.load
@@ -18,6 +19,7 @@ import com.google.android.material.snackbar.Snackbar
 import com.lucas.knot.databinding.ActivityChatListBinding
 import com.lucas.knot.databinding.ChatListContentBinding
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 
 /**
@@ -59,7 +61,11 @@ class ChatListActivity : AppCompatActivity() {
             twoPane = true
         }
         setupRecyclerView(binding.chatListIncludeLayout.chatList)
-        viewModel.getChats().observe(this) {
+        viewModel.isFirstUser = intent.getBooleanExtra("IS_NEW_USER", true)
+        lifecycleScope.launch {
+            viewModel.getChats()
+        }
+        viewModel.chatLiveData.observe(this) {
             adapter.submitList(it)
         }
 
@@ -95,11 +101,16 @@ class ChatListActivity : AppCompatActivity() {
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val item = getItem(position)
-            val lastMessage = item.messages.last()
+            var lastMessage: Message? = null
+            try {
+                lastMessage = item.messages.last()
+            } catch (ex: Exception) {
+
+            }
             if (item.groupId != null) {
                 holder.binding.chatImage.load(item.groupImageUrl)
                 holder.binding.chatNameTv.text = item.chatTitle
-                holder.binding.latestMessageDateTv.text = SimpleDateFormat("dd/MM/yyyy").format(lastMessage.datePosted)
+                holder.binding.latestMessageDateTv.text = SimpleDateFormat("dd/MM/yyyy").format(lastMessage?.datePosted)
             } else {
                 item.userInfo?.observe(lifecycleOwner) {
                     holder.binding.chatNameTv.text = it.userName
@@ -107,7 +118,7 @@ class ChatListActivity : AppCompatActivity() {
                 }
             }
             // TODO WARNING MEMORY LEAK, PLEASE IMPLEMENT ON DISPOSE
-            lastMessage.senderUser.observe(lifecycleOwner) {
+            lastMessage?.senderUser?.observe(lifecycleOwner) {
                 holder.binding.latestMessagePreviewTv.text = "${it.userName}: ${lastMessage.message}"
             }
             val unreadCount = item.messages.count { it.messageStatus != MessageStatus.READ }

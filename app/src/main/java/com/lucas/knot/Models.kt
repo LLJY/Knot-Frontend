@@ -4,7 +4,7 @@ import androidx.lifecycle.LiveData
 import androidx.recyclerview.widget.DiffUtil
 import java.io.Serializable
 
-data class Chat(var userInfo: LiveData<UserInfo>?, var groupId: String?, var chatTitle: String?, var messages: MutableList<Message>, var groupImageUrl: String?, var members: List<LiveData<UserInfo>>?) : Serializable
+data class Chat(var id: Long, var userInfo: LiveData<UserInfo>?, var groupId: String?, var chatTitle: String?, var messages: MutableList<Message>, var groupImageUrl: String?, var members: List<LiveData<UserInfo>>?) : Serializable
 
 class ChatDiffutil : DiffUtil.ItemCallback<Chat>() {
     override fun areItemsTheSame(oldItem: Chat, newItem: Chat): Boolean {

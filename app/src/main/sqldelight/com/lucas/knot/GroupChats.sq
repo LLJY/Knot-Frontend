@@ -9,6 +9,10 @@ insertOrReplace:
 INSERT OR REPLACE INTO GroupChats(id, title, group_photo_fk)
 VALUES(?,?,?);
 
+getGroupById:
+SELECT * FROM GroupChats
+WHERE id = ?;
+
 deleteById:
 DELETE FROM GroupChats
 WHERE id=?;

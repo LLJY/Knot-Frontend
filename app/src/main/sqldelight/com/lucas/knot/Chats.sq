@@ -1,7 +1,7 @@
 CREATE TABLE Chats (
     id INTEGER NOT NULL UNIQUE PRIMARY KEY AUTOINCREMENT,
-    user_id_fk TEXT,
-    group_id_fk TEXT,
+    user_id_fk TEXT UNIQUE,
+    group_id_fk TEXT UNIQUE,
     FOREIGN KEY (user_id_fk) REFERENCES Users(id) ON DELETE CASCADE,
     FOREIGN KEY (group_id_fk) REFERENCES GroupChats(id) ON DELETE CASCADE
 );

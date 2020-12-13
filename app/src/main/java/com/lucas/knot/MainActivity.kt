@@ -21,7 +21,9 @@ class MainActivity : AppCompatActivity() {
         viewModel.checkLoggedIn().observe(this) {
             // if logged in, skip to the next activity
             if (it) {
-                val intent = Intent(this, ChatListActivity::class.java)
+                val intent = Intent(this, ChatListActivity::class.java).apply {
+                    putExtra("IS_NEW_USER", false)
+                }
                 chatListViewModel.userId = firebaseAuth.currentUser!!.uid
                 startActivity(intent)
             }

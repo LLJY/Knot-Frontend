@@ -28,3 +28,9 @@ fun Users.mapToAppModel() = UserInfo(
         isExists == 1L,
         profilePictureURL ?: ""
 )
+
+fun Medias.mapToAppModel() = Media(
+        mime_type,
+        media_url,
+        size
+)

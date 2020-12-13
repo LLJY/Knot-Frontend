@@ -6,9 +6,10 @@ CREATE TABLE Messages (
     is_forward INTEGER,
     author_id_fk TEXT NOT NULL,
     group_id_fk TEXT,
-    date_posted INTEGER,
+    date_posted INTEGER NOT NULL,
     reciever_user_id TEXT,
     chat_id_fk INTEGER,
+    message_status INTEGER NOT NULL,
     FOREIGN KEY (media_id_fk) REFERENCES Medias(id) ON DELETE CASCADE,
     FOREIGN KEY (reply_message_id_fk) REFERENCES Messages(id) ON DELETE CASCADE,
     FOREIGN KEY (author_id_fk) REFERENCES Users(id) ON DELETE CASCADE,
@@ -32,8 +33,8 @@ SELECT * FROM Messages
 WHERE chat_id_fk = ?;
 
 insertOrReplaceMessage:
-INSERT OR REPLACE INTO Messages(id, media_id_fk, message, reply_message_id_fk, is_forward, author_id_fk, group_id_fk, date_posted, reciever_user_id, chat_id_fk)
-VALUES(?,?,?,?,?,?,?,?,?,?);
+INSERT OR REPLACE INTO Messages(id, media_id_fk, message, reply_message_id_fk, is_forward, author_id_fk, group_id_fk, date_posted, reciever_user_id, chat_id_fk, message_status)
+VALUES(?,?,?,?,?,?,?,?,?,?,?);
 
 deleteAllFields:
 DELETE FROM Messages;
