@@ -22,14 +22,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 
-/**
- * An activity representing a list of Pings. This activity
- * has different presentations for handset and tablet-size devices. On
- * handsets, the activity presents a list of items, which when touched,
- * lead to a [ChatDetailActivity] representing
- * item details. On tablets, the activity presents the list of items and
- * item details side-by-side using two vertical panes.
- */
 @AndroidEntryPoint
 class ChatListActivity : AppCompatActivity() {
 
@@ -67,6 +59,7 @@ class ChatListActivity : AppCompatActivity() {
         }
         viewModel.chatLiveData.observe(this) {
             adapter.submitList(it)
+            adapter.notifyDataSetChanged()
         }
 
     }
@@ -107,6 +100,7 @@ class ChatListActivity : AppCompatActivity() {
             } catch (ex: Exception) {
 
             }
+            // get different information based on group and stuff
             if (item.groupId != null) {
                 holder.binding.chatImage.load(item.groupImageUrl)
                 holder.binding.chatNameTv.text = item.chatTitle
@@ -117,7 +111,6 @@ class ChatListActivity : AppCompatActivity() {
                     holder.binding.chatImage.load(it.profilePictureUrl)
                 }
             }
-            // TODO WARNING MEMORY LEAK, PLEASE IMPLEMENT ON DISPOSE
             lastMessage?.senderUser?.observe(lifecycleOwner) {
                 holder.binding.latestMessagePreviewTv.text = "${it.userName}: ${lastMessage.message}"
             }
@@ -126,6 +119,7 @@ class ChatListActivity : AppCompatActivity() {
                 holder.binding.newMessageCounter.text = unreadCount.toString()
             } else {
                 holder.binding.newMessageCounter.isVisible = false
+                holder.binding.cardNumberContainer.isVisible = false
             }
             // let the activity handle everything, we just post a livedata
             holder.binding.root.setOnClickListener {

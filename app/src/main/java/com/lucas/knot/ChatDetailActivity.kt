@@ -36,6 +36,9 @@ class ChatDetailActivity : AppCompatActivity() {
             // Create the detail fragment and add it to the activity
             // using a fragment transaction.
             viewModel.selectedChat = selectedChat
+//            selectedChat.collect (this){
+//                viewModel.selectedChat.postValue(it)
+//            }
             val fragment = ChatDetailFragment()
             supportFragmentManager.beginTransaction()
                     .add(R.id.chat_detail_container, fragment)

@@ -9,14 +9,18 @@ import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import coil.load
+import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.auth.FirebaseAuth
 import com.lucas.knot.databinding.ChatBubbleBinding
 import com.lucas.knot.databinding.ChatDetailBinding
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import javax.inject.Inject
 
@@ -43,6 +47,20 @@ class ChatDetailFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         // bind all the views
+        lifecycleScope.launch {
+            viewModel.eventListener()
+        }
+        viewModel.readAllMessages()
+        viewModel.chatLiveData.observe(viewLifecycleOwner) {
+            lifecycleScope.launch(Dispatchers.Main) {
+                // sort by dateposted so it's not a mess and remove random blank messages
+                val messages = viewModel.selectedChat.messages.sortedBy { msg -> msg.datePosted }.filter { msg -> msg.message.isNotBlank() }
+                adapter.submitList(viewModel.selectedChat.messages)
+                adapter.notifyDataSetChanged()
+                binding.recycler.scrollToPosition(viewModel.selectedChat.messages.lastIndex)
+            }
+
+        }
         if (viewModel.selectedChat.groupId != null) {
             binding.chatTitleTv.text = viewModel.selectedChat.chatTitle
         } else {
@@ -58,6 +76,17 @@ class ChatDetailFragment : Fragment() {
         binding.recycler.layoutManager = LinearLayoutManager(context)
         binding.recycler.adapter = adapter
         adapter.submitList(viewModel.selectedChat.messages)
+        binding.sendButton.setOnClickListener {
+            // send a message if it is not blank
+            if (!binding.messageText.text.isNullOrBlank()) {
+                viewModel.sendMessage(binding.messageText.text.toString(), null).observe(viewLifecycleOwner) {
+                    if (!it) {
+                        Snackbar.make(binding.root, "Something went wrong when sending your message", Snackbar.LENGTH_SHORT).show()
+                    }
+                }
+                binding.messageText.setText("")
+            }
+        }
     }
 
     class ChatBubbleRecyclerAdapter(private val lifecycleOwner: LifecycleOwner, private val context: Context, private val userId: String) : ListAdapter<Message, ChatBubbleRecyclerAdapter.ViewHolder>(MessageDiffUtil) {

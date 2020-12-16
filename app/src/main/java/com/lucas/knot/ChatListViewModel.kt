@@ -1,6 +1,5 @@
 package com.lucas.knot
 
-import android.util.Log
 import androidx.hilt.lifecycle.ViewModelInject
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -28,7 +27,6 @@ class ChatListViewModel @ViewModelInject constructor(val chatRepository: ChatRep
         chatRepository.newMessagesFlow.collect {
             // add the additional message to the correct chat and inform activity
             val chatList = chatsMutableLiveData.value
-            Log.e("chatList", chatList.toString())
             if (chatList != null) {
                 val chatIndex = chatList.indexOf(chatList.first { chat -> chat.id == it.first })
                 chatList[chatIndex].messages.add(it.second)

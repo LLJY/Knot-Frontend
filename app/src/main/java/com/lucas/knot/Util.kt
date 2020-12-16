@@ -1,6 +1,8 @@
 package com.lucas.knot
 
 import android.util.Patterns
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.Observer
 import services.UserOuterClass
 
 fun CharSequence.isValidEmail() = !isNullOrEmpty() && Patterns.EMAIL_ADDRESS.matcher(this).matches()
@@ -34,3 +36,13 @@ fun Medias.mapToAppModel() = Media(
         media_url,
         size
 )
+// observing livedata once
+
+fun <T> LiveData<T>.observeForeverOnce(observer: Observer<T>) {
+    observeForever(object : Observer<T> {
+        override fun onChanged(t: T?) {
+            observer.onChanged(t)
+            removeObserver(this)
+        }
+    })
+}

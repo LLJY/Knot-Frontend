@@ -1,6 +1,5 @@
 package com.lucas.knot
 
-import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.liveData
 import kotlinx.coroutines.Dispatchers
@@ -56,7 +55,6 @@ class UserRepository @Inject constructor(private val identityStub: IdentityGrpc.
         val userInfoRequest = UserOuterClass.GetUserInfoRequest.newBuilder()
                 .setUserid(userId)
                 .build()
-        Log.e("userid", userId)
         val response = userStub.getUserInfo(userInfoRequest)
         androidDatabase.usersQueries.insertOrReplace(userInfoRequest.userid, response.phoneNumber, response.userName, response.bio, if (response.isExists) 1 else 0, response.profilePictureUri)
         response.mapToAppModel()

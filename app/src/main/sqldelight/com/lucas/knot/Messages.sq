@@ -38,3 +38,8 @@ VALUES(?,?,?,?,?,?,?,?,?,?,?);
 
 deleteAllFields:
 DELETE FROM Messages;
+
+readMessage:
+UPDATE Messages
+SET message_status = 2
+WHERE id = ?;
