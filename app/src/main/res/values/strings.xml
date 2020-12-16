@@ -13,4 +13,5 @@
     <string name="title_chat_list">Chats</string>
     <string name="title_chat_detail">Chat Detail</string>
     <string name="send_a_text_hint">Send a text...</string>
+    <string name="otp_hint">6 Digit OTP</string>
 </resources>
