@@ -16,6 +16,7 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import coil.load
 import com.google.android.material.snackbar.Snackbar
+import com.google.firebase.auth.FirebaseAuth
 import com.lucas.knot.databinding.ActivityChatListBinding
 import com.lucas.knot.databinding.ChatListContentBinding
 import dagger.hilt.android.AndroidEntryPoint
@@ -57,9 +58,16 @@ class ChatListActivity : AppCompatActivity() {
         lifecycleScope.launch {
             viewModel.getChats()
         }
+        // observe the chat list and update recyclerview
         viewModel.chatLiveData.observe(this) {
             adapter.submitList(it)
             adapter.notifyDataSetChanged()
+        }
+        // update the token on the backend
+        viewModel.updateNotificationToken().observe(this) {
+            if (!it.first) {
+                Snackbar.make(binding.root, "An error has occurred, you might not receive notifications", Snackbar.LENGTH_SHORT).show()
+            }
         }
 
     }
@@ -67,7 +75,9 @@ class ChatListActivity : AppCompatActivity() {
     private fun setupRecyclerView(recyclerView: RecyclerView) {
         adapter = ChatListRecyclerAdapter(this, this)
         recyclerView.adapter = adapter
+
         adapter.onItemClickLiveData.observe(this) {
+            // if it is in tablet view, replace the fragment instead of starting a new activity
             if (twoPane) {
                 chatDetailViewModel.selectedChat = it
                 val fragment = ChatDetailFragment()
@@ -113,14 +123,15 @@ class ChatListActivity : AppCompatActivity() {
             }
             lastMessage?.senderUser?.observe(lifecycleOwner) {
                 holder.binding.latestMessagePreviewTv.text = "${it.userName}: ${lastMessage.message}"
+                val unreadCount = item.messages.count { msg -> msg.messageStatus != MessageStatus.READ && it.userId != FirebaseAuth.getInstance().currentUser!!.uid }
+                if (unreadCount > 0) {
+                    holder.binding.newMessageCounter.text = unreadCount.toString()
+                } else {
+                    holder.binding.newMessageCounter.isVisible = false
+                    holder.binding.cardNumberContainer.isVisible = false
+                }
             }
-            val unreadCount = item.messages.count { it.messageStatus != MessageStatus.READ }
-            if (unreadCount > 0) {
-                holder.binding.newMessageCounter.text = unreadCount.toString()
-            } else {
-                holder.binding.newMessageCounter.isVisible = false
-                holder.binding.cardNumberContainer.isVisible = false
-            }
+
             // let the activity handle everything, we just post a livedata
             holder.binding.root.setOnClickListener {
                 mutableOnClickListenerLiveData.postValue(item)

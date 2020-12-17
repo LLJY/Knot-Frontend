@@ -10,6 +10,17 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Knot">
+        <service
+            android:name=".FirebaseNotificationService"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+
+
+        </service>
+
         <activity
             android:name=".ChatListActivity"
             android:label="@string/title_chat_list"
