@@ -74,23 +74,31 @@ class ChatRepository @Inject constructor(private val chatStub: ChatGrpc.ChatBloc
         var chatId = 0L
         if (groupId == null) {
             val senderInfo = ChatOuterClass.SenderInfo.newBuilder()
-                    .setUserid(authorId)
-                    .setIsInit(false).build()
+                .setUserid(authorId)
+                .setIsInit(false).build()
             val messageEvent = ChatOuterClass.Event.newBuilder()
-                    .setMessage(ChatOuterClass.Message.newBuilder()
-                            .setId(message.id)
-                            .setDatePostedUnixTimestamp(System.currentTimeMillis())
-                            .setReceiverUserId(receiverId)
-                            .setMessage(message.message)
-                            .setSenderInfo(senderInfo).build())
-                    .setSenderInfo(senderInfo).build()
-
-            chatId = androidDatabase.chatsQueries.getChatIdByUserId(receiverId).executeAsOne()
+                .setMessage(
+                    ChatOuterClass.Message.newBuilder()
+                        .setId(message.id)
+                        .setDatePostedUnixTimestamp(System.currentTimeMillis())
+                        .setReceiverUserId(receiverId)
+                        .setMessage(message.message)
+                        .setSenderInfo(senderInfo).build()
+                )
+                .setSenderInfo(senderInfo).build()
+            chatId = try {
+                androidDatabase.chatsQueries.getChatIdByUserId(receiverId).executeAsOne()
+            } catch (ex: Exception) {
+                // insert chat if not exists, usually happens with new chats
+                androidDatabase.chatsQueries.insertOrReplace(receiverId, null)
+                androidDatabase.chatsQueries.lastInsertedRowId().executeAsOne()
+            }
             chatEventStream!!.onNext(messageEvent)
         } else {
             chatId = androidDatabase.chatsQueries.getChatIdByGroupId(groupId).executeAsOne()
         }
         androidDatabase.messagesQueries.insertOrReplaceMessage(message.id, null, message.message, message.replyId, if (message.isForward) 1 else 0, authorId, groupId, System.currentTimeMillis(), receiverId, chatId, 0L)
+        chatId
     }
 
     suspend fun getNewChats(userId: String) = withContext(Dispatchers.IO) {

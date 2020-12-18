@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.activity.viewModels
@@ -26,6 +27,7 @@ import com.lucas.knot.databinding.ChatListContentBinding
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
+import javax.inject.Inject
 
 
 @AndroidEntryPoint
@@ -41,22 +43,48 @@ class ChatListActivity : AppCompatActivity() {
     private var twoPane: Boolean = false
     private val binding: ActivityChatListBinding by lazy {
         ActivityChatListBinding.inflate(
-                layoutInflater
+            layoutInflater
         )
     }
     private lateinit var adapter: ChatListRecyclerAdapter
     private val viewModel: ChatListViewModel by viewModels()
     private val chatDetailViewModel: ChatDetailViewModel by viewModels()
+
+    @Inject
+    lateinit var firebaseAuth: FirebaseAuth
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
-
+        Log.e("oncreate", "aaaaaaaaa")
         val toolbar = binding.toolbar
         setSupportActionBar(toolbar)
         toolbar.title = title
         binding.fab.setOnClickListener {
-            Snackbar.make(it, "Replace with your own action", Snackbar.LENGTH_LONG)
-                    .setAction("Action", null).show()
+            startActivity(Intent(this, SelectUserActivity::class.java))
+        }
+        val selectedUser = intent.getStringExtra("SELECTED_ID")
+        if (selectedUser != null) {
+            // this activity was launched by SelectUserActivity to launch a new chat
+            selectedChat = Chat(
+                -1,
+                viewModel.userRepository.getUserInfo(selectedUser),
+                null,
+                null,
+                mutableListOf(),
+                null,
+                null
+            )
+            if (twoPane) {
+                chatDetailViewModel.selectedChat = selectedChat
+                val fragment = ChatDetailFragment()
+                supportFragmentManager
+                    .beginTransaction()
+                    .replace(R.id.chat_detail_container, fragment)
+                    .commit()
+            } else {
+                val intent = Intent(this, ChatDetailActivity::class.java)
+                startActivity(intent)
+            }
         }
         if (binding.chatListIncludeLayout.chatDetailContainer != null) {
             // The detail container view will be present only in the

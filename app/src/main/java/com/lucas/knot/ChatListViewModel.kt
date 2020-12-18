@@ -15,7 +15,14 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import kotlin.properties.Delegates
 
-class ChatListViewModel @ViewModelInject constructor(private val signalingRepository: SignalingRepository, val chatRepository: ChatRepository, private val firebaseAuth: FirebaseAuth, private val notificationRepository: NotificationRepository, private val messaging: FirebaseMessaging) : ViewModel() {
+class ChatListViewModel @ViewModelInject constructor(
+    val userRepository: UserRepository,
+    private val signalingRepository: SignalingRepository,
+    val chatRepository: ChatRepository,
+    private val firebaseAuth: FirebaseAuth,
+    private val notificationRepository: NotificationRepository,
+    private val messaging: FirebaseMessaging
+) : ViewModel() {
     var userId: String = ""
     var isFirstUser by Delegates.notNull<Boolean>()
     private val chatsMutableLiveData: MutableLiveData<List<Chat>> = MutableLiveData()

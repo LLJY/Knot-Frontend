@@ -26,15 +26,16 @@ class FirebaseNotificationService : FirebaseMessagingService() {
     @Inject
     lateinit var notificationRepository: NotificationRepository
 
-    @Inject
-    lateinit var auth: FirebaseAuth
+    // we cannot inject as lazy injection causes access from override methods to break (NPE)
+    val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
 
     // create a persistent class so that random retains its entropy
     private val random = Random(3000)
     override fun onMessageReceived(p0: RemoteMessage) {
         super.onMessageReceived(p0)
         // get the notification manager
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notificationManager =
+            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         val channelId = "KNOT_MESSAGE_NOTIFICATION_CHANNEL"
         val notificationId = random.nextInt()

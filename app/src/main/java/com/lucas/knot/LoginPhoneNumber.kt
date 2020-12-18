@@ -50,6 +50,7 @@ class LoginPhoneNumber : Fragment() {
                 findNavController().navigate(LoginPhoneNumberDirections.actionLoginPhoneNumberToOneTimePasswordFragment())
             }
         }
+
     }
 
 }

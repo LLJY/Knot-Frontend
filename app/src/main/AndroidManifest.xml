@@ -4,6 +4,7 @@
 
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 
     <application
         android:name=".MainApplication"
@@ -29,6 +30,11 @@
             android:label="@string/title_chat_list"
             android:theme="@style/Theme.Knot.NoActionBar" />
         <activity
+            android:name=".SelectUserActivity"
+            android:label="@string/title_chat_list"
+            android:noHistory="true"
+            android:theme="@style/Theme.Knot.NoActionBar" />
+        <activity
             android:name=".ChatDetailActivity"
             android:label="@string/title_chat_detail"
             android:parentActivityName=".ChatListActivity"
@@ -39,7 +45,7 @@
         </activity>
         <activity
             android:name=".MainActivity"
-            android:noHistory="true">
+            android:noHistory="false">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

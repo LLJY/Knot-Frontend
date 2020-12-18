@@ -74,7 +74,17 @@ class ChatDetailViewModel @ViewModelInject constructor(private val signalingRepo
             try {
                 // if userInfo is null, send groupId instead
                 if (selectedChat.userInfo != null) {
-                    chatRepository.sendMessage(messageModel, auth.currentUser!!.uid, selectedChat.userInfo!!.value?.userId, null)
+                    val id = chatRepository.sendMessage(
+                        messageModel,
+                        auth.currentUser!!.uid,
+                        selectedChat.userInfo!!.value?.userId,
+                        null
+                    )
+                    // if the chat id is not the same, update it. this is to ensure that the database id is synced up with view
+                    if (selectedChat.id != id) {
+                        selectedChat.id = id
+                        chatMutableLiveData.postValue(selectedChat)
+                    }
                 } else {
                     chatRepository.sendMessage(messageModel, auth.currentUser!!.uid, selectedChat.userInfo!!.value?.userId, selectedChat.groupId)
                 }
