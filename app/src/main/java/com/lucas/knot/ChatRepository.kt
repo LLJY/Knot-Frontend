@@ -2,6 +2,8 @@ package com.lucas.knot
 
 import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
+import io.grpc.Metadata
+import io.grpc.stub.MetadataUtils
 import io.grpc.stub.StreamObserver
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -9,19 +11,30 @@ import kotlinx.coroutines.channels.BroadcastChannel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import services.ChatGrpc
 import services.ChatOuterClass
+import services.IdentityGrpc
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class ChatRepository @Inject constructor(private val chatStub: ChatGrpc.ChatBlockingStub, private val chatAsyncStub: ChatGrpc.ChatStub, private val userRepository: UserRepository, private val androidDatabase: Database, private val firebaseAuth: FirebaseAuth) {
+class ChatRepository @Inject constructor(
+    private var chatStub: ChatGrpc.ChatBlockingStub,
+    private var chatAsyncStub: ChatGrpc.ChatStub,
+    private val userRepository: UserRepository,
+    private val androidDatabase: Database,
+    private val firebaseAuth: FirebaseAuth,
+    private var identityBlockingStub: IdentityGrpc.IdentityBlockingStub
+) {
     var chatEventStream: StreamObserver<ChatOuterClass.Event>? = null
     var newMessageBroadcastChannel: BroadcastChannel<Pair<Long, Message>> = BroadcastChannel(100)
 
     val newMessagesFlow: Flow<Pair<Long, Message>> get() = newMessageBroadcastChannel.asFlow()
+    private var isAuthorized = false
     suspend fun getAllChats(userId: String): List<Chat> {
+        updateAuthorizationHeader()
         // clear the database when getting all chats
         withContext(Dispatchers.IO) {
             androidDatabase.usersInGroupChatsQueries.deleteAllFields()
@@ -31,32 +44,50 @@ class ChatRepository @Inject constructor(private val chatStub: ChatGrpc.ChatBloc
         }
         val result = withContext(Dispatchers.IO) {
             val request = ChatOuterClass.AllMessagesRequest.newBuilder()
-                    .setUserid(userId)
-                    .build()
+                .setUserid(userId)
+                .build()
             chatStub.getAllMessages(request)
         }
         return convertAndStoreMessages(result.messageList, userId)
     }
 
+    private suspend fun updateAuthorizationHeader() {
+        if (!isAuthorized) {
+            var key = Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER)
+            val clientHeader = Metadata()
+            if (firebaseAuth.currentUser != null) {
+                val token =
+                    "Bearer ${firebaseAuth.currentUser!!.getIdToken(true).await().token}".trim()
+                Log.e("a", token)
+                clientHeader.put(key, token)
+                chatAsyncStub = MetadataUtils.attachHeaders(chatAsyncStub, clientHeader)
+                chatStub = MetadataUtils.attachHeaders(chatStub, clientHeader)
+            }
+            isAuthorized = true
+        }
+
+    }
+
     suspend fun readMessage(id: String) = withContext(Dispatchers.Default) {
+        updateAuthorizationHeader()
         // sometimes grpc likes to fuck you over and return an error
         try {
             if (id.isNotBlank()) {
                 Log.e("read message", id)
                 val message = ChatOuterClass.Event.newBuilder()
-                        .setMessageRead(
-                                ChatOuterClass.MessageRead.newBuilder()
-                                        .setMessageId(id)
-                                        .setMessageStatus(2)
-                                        .build()
-                        )
-                        .setSenderInfo(
-                                ChatOuterClass.SenderInfo.newBuilder()
-                                        .setUserid(firebaseAuth.currentUser!!.uid)
-                                        .setIsInit(false)
-                                        .build()
-                        )
-                        .build()
+                    .setMessageRead(
+                        ChatOuterClass.MessageRead.newBuilder()
+                            .setMessageId(id)
+                            .setMessageStatus(2)
+                            .build()
+                    )
+                    .setSenderInfo(
+                        ChatOuterClass.SenderInfo.newBuilder()
+                            .setUserid(firebaseAuth.currentUser!!.uid)
+                            .setIsInit(false)
+                            .build()
+                    )
+                    .build()
                 chatEventStream!!.onNext(message)
                 androidDatabase.messagesQueries.readMessage(id)
             } else {
@@ -71,6 +102,7 @@ class ChatRepository @Inject constructor(private val chatStub: ChatGrpc.ChatBloc
 
     // send normal message
     suspend fun sendMessage(message: Message, authorId: String, receiverId: String?, groupId: String?) = withContext(Dispatchers.IO) {
+        updateAuthorizationHeader()
         var chatId = 0L
         if (groupId == null) {
             val senderInfo = ChatOuterClass.SenderInfo.newBuilder()
@@ -102,10 +134,11 @@ class ChatRepository @Inject constructor(private val chatStub: ChatGrpc.ChatBloc
     }
 
     suspend fun getNewChats(userId: String) = withContext(Dispatchers.IO) {
+        updateAuthorizationHeader()
         val result = withContext(Dispatchers.IO) {
             val request = ChatOuterClass.NewMessagesRequest.newBuilder()
-                    .setUserid(userId)
-                    .build()
+                .setUserid(userId)
+                .build()
             chatStub.getUnreadMessages(request)
         }
         convertAndStoreMessages(result.messageList, userId)
@@ -116,30 +149,31 @@ class ChatRepository @Inject constructor(private val chatStub: ChatGrpc.ChatBloc
      * new messages will be stored in db.
      */
     suspend fun getAllMessagesWithDb(userId: String) = withContext(Dispatchers.IO) {
+        updateAuthorizationHeader()
         val allDbMessages = androidDatabase.messagesQueries.getAllMessages().executeAsList()
         val allDbChats = androidDatabase.chatsQueries.getAll().executeAsList()
         val allChats = allDbChats.map {
             if (it.user_id_fk != null) {
                 Chat(
-                        it.id,
-                        userRepository.getUserInfo(it.user_id_fk),
-                        null,
-                        null,
-                        allDbMessages.filter { messages -> messages.chat_id_fk == it.id }.map { messages -> messages.mapToAppModel() } as MutableList<Message>,
-                        null,
-                        null
+                    it.id,
+                    userRepository.getUserInfo(it.user_id_fk),
+                    null,
+                    null,
+                    allDbMessages.filter { messages -> messages.chat_id_fk == it.id }.map { messages -> messages.mapToAppModel() } as MutableList<Message>,
+                    null,
+                    null
                 )
             } else {
                 // if user id is null, group id will not be null
                 val groupInfo = androidDatabase.groupChatsQueries.getGroupById(it.group_id_fk!!).executeAsOne()
                 Chat(
-                        it.id,
-                        null,
-                        it.group_id_fk,
-                        groupInfo.title,
-                        allDbMessages.filter { messages -> messages.chat_id_fk == it.id }.map { messages -> messages.mapToAppModel() } as MutableList<Message>,
-                        androidDatabase.mediaQueries.getMediaById(it.group_photo_fk!!).executeAsOne().media_url,
-                        androidDatabase.usersInGroupChatsQueries.getGroupMembersByGroupId(it.group_id_fk).executeAsList().map { userid -> userRepository.getUserInfo(userid) }
+                    it.id,
+                    null,
+                    it.group_id_fk,
+                    groupInfo.title,
+                    allDbMessages.filter { messages -> messages.chat_id_fk == it.id }.map { messages -> messages.mapToAppModel() } as MutableList<Message>,
+                    androidDatabase.mediaQueries.getMediaById(it.group_photo_fk!!).executeAsOne().media_url,
+                    androidDatabase.usersInGroupChatsQueries.getGroupMembersByGroupId(it.group_id_fk).executeAsList().map { userid -> userRepository.getUserInfo(userid) }
                 )
             }
         } as MutableList
@@ -163,6 +197,7 @@ class ChatRepository @Inject constructor(private val chatStub: ChatGrpc.ChatBloc
     }
 
     private suspend fun convertAndStoreMessages(messages: List<ChatOuterClass.Message>, userId: String): List<Chat> = withContext(Dispatchers.IO) {
+        updateAuthorizationHeader()
         // partition the lists so we have both group messages and peer 2 peer messages
         // much more efficient as we need not filter twice on the same list
         val msg = messages.sortedBy { it.datePostedUnixTimestamp }
@@ -173,8 +208,8 @@ class ChatRepository @Inject constructor(private val chatStub: ChatGrpc.ChatBloc
         val groupChats = withContext(Dispatchers.IO) {
             groupMessages.map { groupedMessages ->
                 val groupRequest = ChatOuterClass.GetGroupsRequest.newBuilder()
-                        .setGroupId(groupedMessages.key)
-                        .build()
+                    .setGroupId(groupedMessages.key)
+                    .build()
                 val response = chatStub.getGroupInfo(groupRequest)
                 val groupMemberInfos = response.groupMemberIdsList.map { userRepository.getUserInfo(it) }
                 if (response.groupImage != null) {
@@ -262,6 +297,7 @@ class ChatRepository @Inject constructor(private val chatStub: ChatGrpc.ChatBloc
     }
 
     suspend fun eventStream(userId: String) {
+        updateAuthorizationHeader()
         val requestObserver = chatAsyncStub.eventStream(object : StreamObserver<ChatOuterClass.Event> {
             override fun onNext(value: ChatOuterClass.Event?) {
                 //TODO IMPLEMENT THE OTHER STREAMS

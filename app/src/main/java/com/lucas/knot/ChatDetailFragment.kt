@@ -24,6 +24,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import javax.inject.Inject
+import kotlin.time.ExperimentalTime
 
 /**
  * A fragment representing a single Chat detail screen.
@@ -46,6 +47,7 @@ class ChatDetailFragment : Fragment() {
         return binding.root
     }
 
+    @ExperimentalTime
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         // bind all the views
         lifecycleScope.launch {

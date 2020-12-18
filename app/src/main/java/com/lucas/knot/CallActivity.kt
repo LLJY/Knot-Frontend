@@ -161,7 +161,7 @@ class CallActivity : AppCompatActivity() {
         val mediaStream = factory.createLocalMediaStream("ARDAMS")
         mediaStream.addTrack(videoTrackFromCamera)
         mediaStream.addTrack(localAudioTrack)
-        peerConnection!!.addTrack(videoTrackFromCamera)
+        peerConnection!!.addStream(mediaStream)
     }
 
     private fun createVideoTrackFromCameraAndShowIt() {

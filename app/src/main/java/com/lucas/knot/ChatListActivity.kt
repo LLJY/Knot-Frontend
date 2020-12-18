@@ -62,6 +62,11 @@ class ChatListActivity : AppCompatActivity() {
         binding.fab.setOnClickListener {
             startActivity(Intent(this, SelectUserActivity::class.java))
         }
+        viewModel.getAdvert().observe(this) {
+            binding.chatListIncludeLayout.advertImage.load(it.imageUrl)
+            binding.chatListIncludeLayout.advertTitle.text = it.title
+            binding.chatListIncludeLayout.advertText.text = it.message
+        }
         val selectedUser = intent.getStringExtra("SELECTED_ID")
         if (selectedUser != null) {
             // this activity was launched by SelectUserActivity to launch a new chat

@@ -16,6 +16,7 @@ import kotlinx.coroutines.withContext
 import kotlin.properties.Delegates
 
 class ChatListViewModel @ViewModelInject constructor(
+    private val advertisingRepository: AdvertisingRepository,
     val userRepository: UserRepository,
     private val signalingRepository: SignalingRepository,
     val chatRepository: ChatRepository,
@@ -63,6 +64,15 @@ class ChatListViewModel @ViewModelInject constructor(
     }
 
     fun updateNotificationToken() = liveData {
-        emit(notificationRepository.updateNotificationId(firebaseAuth.currentUser!!.uid, messaging.token.await()))
+        emit(
+            notificationRepository.updateNotificationId(
+                firebaseAuth.currentUser!!.uid,
+                messaging.token.await()
+            )
+        )
+    }
+
+    fun getAdvert() = liveData(Dispatchers.IO) {
+        emit(advertisingRepository.getAdvert())
     }
 }

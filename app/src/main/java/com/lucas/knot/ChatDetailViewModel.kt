@@ -10,13 +10,21 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.*
+import kotlin.time.ExperimentalTime
 
-class ChatDetailViewModel @ViewModelInject constructor(private val signalingRepository: SignalingRepository, val chatRepository: ChatRepository, private val auth: FirebaseAuth, private val userRepository: UserRepository) : ViewModel() {
+class ChatDetailViewModel @ExperimentalTime
+@ViewModelInject constructor(
+    private val signalingRepository: SignalingRepository,
+    val chatRepository: ChatRepository,
+    private val auth: FirebaseAuth,
+    private val userRepository: UserRepository
+) : ViewModel() {
     lateinit var selectedChat: Chat
     private val chatMutableLiveData: MutableLiveData<Chat> = MutableLiveData()
 
     val chatLiveData get() = chatMutableLiveData
 
+    @ExperimentalTime
     suspend fun eventListener() = withContext(Dispatchers.IO) {
         chatRepository.newMessagesFlow.collect {
             // add the additional message to the correct chat and inform activity
@@ -39,6 +47,7 @@ class ChatDetailViewModel @ViewModelInject constructor(private val signalingRepo
         }
     }
 
+    @ExperimentalTime
     fun readMessage(id: String) = liveData {
         emit(chatRepository.readMessage(id))
     }
@@ -46,6 +55,7 @@ class ChatDetailViewModel @ViewModelInject constructor(private val signalingRepo
     /**
      * send the server to tell it that the message has been read
      */
+    @ExperimentalTime
     fun readAllMessages() {
         val messages = selectedChat.messages
         try {
@@ -68,6 +78,7 @@ class ChatDetailViewModel @ViewModelInject constructor(private val signalingRepo
     /**
      * send a message to the server
      */
+    @ExperimentalTime
     fun sendMessage(message: String, replyId: String?): LiveData<Boolean> {
         val messageModel = Message(UUID.randomUUID().toString(), replyId, null, false, MessageStatus.SENT, System.currentTimeMillis(), message, selectedChat.userInfo, userRepository.getUserInfo(auth.currentUser!!.uid))
         return liveData(Dispatchers.IO) {

@@ -35,7 +35,6 @@ class MainApplication : Application()
 object NetworkModule {
     private const val baseUrl = "10.0.2.2"
 
-    //TODO TLS
     @Provides
     fun providesIdentityService(): IdentityGrpc.IdentityBlockingStub {
         val channel = ManagedChannelBuilder.forAddress(baseUrl, 5001)
