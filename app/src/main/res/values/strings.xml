@@ -14,4 +14,7 @@
     <string name="title_chat_detail">Chat Detail</string>
     <string name="send_a_text_hint">Send a text...</string>
     <string name="otp_hint">6 Digit OTP</string>
+    <string name="title_activity_call">FullscreenActivity</string>
+    <string name="dummy_button">Dummy Button</string>
+    <string name="dummy_content">DUMMY\nCONTENT</string>
 </resources>

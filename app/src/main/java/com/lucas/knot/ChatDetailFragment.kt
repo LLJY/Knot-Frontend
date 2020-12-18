@@ -1,6 +1,7 @@
 package com.lucas.knot
 
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -54,7 +55,7 @@ class ChatDetailFragment : Fragment() {
         viewModel.chatLiveData.observe(viewLifecycleOwner) {
             lifecycleScope.launch(Dispatchers.Main) {
                 // sort by dateposted so it's not a mess and remove random blank messages
-                val messages = viewModel.selectedChat.messages.sortedBy { msg -> msg.datePosted }.filter { msg -> msg.message.isNotBlank() }
+                val messages = viewModel.selectedChat.messages.filter { msg -> !msg.message.isNullOrBlank() }.sortedBy { msg -> msg.datePosted }
                 adapter.submitList(viewModel.selectedChat.messages)
                 adapter.notifyDataSetChanged()
                 binding.recycler.scrollToPosition(viewModel.selectedChat.messages.lastIndex)
@@ -86,6 +87,16 @@ class ChatDetailFragment : Fragment() {
                 }
                 binding.messageText.setText("")
             }
+        }
+
+        binding.callButton.setOnClickListener {
+            // get the user id and then start call with the user
+            viewModel.selectedChat.userInfo?.observe(viewLifecycleOwner) {
+                startActivity(Intent(activity, CallActivity::class.java).apply {
+                    putExtra("START_CALL", it.userId)
+                })
+            }
+
         }
     }
 

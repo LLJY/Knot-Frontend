@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".CallActivity">
+    <!--    <FrameLayout-->
+    <!--        android:id="@+id/fragment_call_hud_container"-->
+    <!--        android:layout_width="match_parent"-->
+    <!--        android:layout_height="match_parent"/>-->
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/chat_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:text="Connecting..." />
+
+    <org.webrtc.SurfaceViewRenderer
+        android:id="@+id/rtc_surface_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginBottom="240dp" />
+
+    <org.webrtc.SurfaceViewRenderer
+        android:id="@+id/peer_surface_view"
+        android:layout_width="135dp"
+        android:layout_height="240dp"
+        android:layout_gravity="bottom|end"
+        android:elevation="12dp" />
+
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

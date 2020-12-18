@@ -11,7 +11,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.*
 
-class ChatDetailViewModel @ViewModelInject constructor(val chatRepository: ChatRepository, private val auth: FirebaseAuth, private val userRepository: UserRepository) : ViewModel() {
+class ChatDetailViewModel @ViewModelInject constructor(private val signalingRepository: SignalingRepository, val chatRepository: ChatRepository, private val auth: FirebaseAuth, private val userRepository: UserRepository) : ViewModel() {
     lateinit var selectedChat: Chat
     private val chatMutableLiveData: MutableLiveData<Chat> = MutableLiveData()
 
@@ -30,6 +30,15 @@ class ChatDetailViewModel @ViewModelInject constructor(val chatRepository: ChatR
         }
     }
 
+    /**
+     * Initiates the event listener for calls
+     */
+    fun signalOfferListener() = liveData(Dispatchers.IO) {
+        signalingRepository.signalOfferFlow.collect {
+            emit(it)
+        }
+    }
+
     fun readMessage(id: String) = liveData {
         emit(chatRepository.readMessage(id))
     }
@@ -39,16 +48,20 @@ class ChatDetailViewModel @ViewModelInject constructor(val chatRepository: ChatR
      */
     fun readAllMessages() {
         val messages = selectedChat.messages
-        for (i in messages) {
-            // observe for userinfo and do not send it if the userid is the same as the sender's
-            i.senderUser.observeForeverOnce {
-                if (i.messageStatus != MessageStatus.READ && it.userId != auth.currentUser!!.uid) {
-                    viewModelScope.launch {
-                        delay(100)
-                        chatRepository.readMessage(i.id)
+        try {
+            messages.forEach { i ->
+                // observe for userinfo and do not send it if the userid is the same as the sender's
+                i.senderUser.observeForeverOnce {
+                    if (i.messageStatus != MessageStatus.READ && it.userId != auth.currentUser!!.uid && i.message.isNotBlank()) {
+                        viewModelScope.launch {
+                            delay(100)
+                            chatRepository.readMessage(i.id)
+                        }
                     }
                 }
             }
+        } catch (ex: Exception) {
+            Log.e("readAllMessages()", ex.toString())
         }
     }
 

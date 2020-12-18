@@ -1,12 +1,16 @@
 package com.lucas.knot
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LiveData
@@ -23,15 +27,23 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 
+
 @AndroidEntryPoint
 class ChatListActivity : AppCompatActivity() {
+    private val MY_PERMISSIONS_REQUEST_CAMERA = 100
+    private val MY_PERMISSIONS_REQUEST_RECORD_AUDIO = 101
+    private val MY_PERMISSIONS_REQUEST = 102
 
     /**
      * Whether or not the activity is in two-pane mode, i.e. running on a tablet
      * device.
      */
     private var twoPane: Boolean = false
-    private val binding: ActivityChatListBinding by lazy { ActivityChatListBinding.inflate(layoutInflater) }
+    private val binding: ActivityChatListBinding by lazy {
+        ActivityChatListBinding.inflate(
+                layoutInflater
+        )
+    }
     private lateinit var adapter: ChatListRecyclerAdapter
     private val viewModel: ChatListViewModel by viewModels()
     private val chatDetailViewModel: ChatDetailViewModel by viewModels()
@@ -66,8 +78,22 @@ class ChatListActivity : AppCompatActivity() {
         // update the token on the backend
         viewModel.updateNotificationToken().observe(this) {
             if (!it.first) {
-                Snackbar.make(binding.root, "An error has occurred, you might not receive notifications", Snackbar.LENGTH_SHORT).show()
+                Snackbar.make(
+                        binding.root,
+                        "An error has occurred, you might not receive notifications",
+                        Snackbar.LENGTH_SHORT
+                ).show()
             }
+        }
+        // get all permissions
+        askForPermissions()
+        // start the event listener so we can start receiving calls
+        viewModel.startSignalEventListener()
+
+        viewModel.signalOfferListener().observe(this) {
+            startActivity(Intent(this, CallActivity::class.java).apply {
+                putExtra("SIGNAL_OFFER", it)
+            })
         }
 
     }
@@ -93,10 +119,50 @@ class ChatListActivity : AppCompatActivity() {
         }
     }
 
-    class ChatListRecyclerAdapter(var context: Context, var lifecycleOwner: LifecycleOwner) : ListAdapter<Chat, ChatListRecyclerAdapter.ViewHolder>(ChatDiffutil()) {
+    /**
+     * Check if permissions are already granted, if not, ask for them.
+     */
+    private fun askForPermissions() {
+        if ((ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+                        != PackageManager.PERMISSION_GRANTED) &&
+                (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+                        != PackageManager.PERMISSION_GRANTED)
+        ) {
+            ActivityCompat.requestPermissions(
+                    this, arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO),
+                    MY_PERMISSIONS_REQUEST
+            )
+        } else if (ContextCompat.checkSelfPermission(
+                        this,
+                        Manifest.permission.RECORD_AUDIO
+                ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            ActivityCompat.requestPermissions(
+                    this, arrayOf(Manifest.permission.RECORD_AUDIO),
+                    MY_PERMISSIONS_REQUEST_RECORD_AUDIO
+            )
+        } else if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+                != PackageManager.PERMISSION_GRANTED
+        ) {
+            ActivityCompat.requestPermissions(
+                    this, arrayOf(Manifest.permission.CAMERA),
+                    MY_PERMISSIONS_REQUEST_CAMERA
+            )
+        }
+    }
+
+    class ChatListRecyclerAdapter(var context: Context, var lifecycleOwner: LifecycleOwner) : ListAdapter<Chat, ChatListRecyclerAdapter.ViewHolder>(
+            ChatDiffutil()
+    ) {
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-            return ViewHolder(ChatListContentBinding.inflate(LayoutInflater.from(context), parent, false))
+            return ViewHolder(
+                    ChatListContentBinding.inflate(
+                            LayoutInflater.from(context),
+                            parent,
+                            false
+                    )
+            )
         }
 
         private val mutableOnClickListenerLiveData: MutableLiveData<Chat> = MutableLiveData()
@@ -114,7 +180,9 @@ class ChatListActivity : AppCompatActivity() {
             if (item.groupId != null) {
                 holder.binding.chatImage.load(item.groupImageUrl)
                 holder.binding.chatNameTv.text = item.chatTitle
-                holder.binding.latestMessageDateTv.text = SimpleDateFormat("dd/MM/yyyy").format(lastMessage?.datePosted)
+                holder.binding.latestMessageDateTv.text = SimpleDateFormat("dd/MM/yyyy").format(
+                        lastMessage?.datePosted
+                )
             } else {
                 item.userInfo?.observe(lifecycleOwner) {
                     holder.binding.chatNameTv.text = it.userName
@@ -139,7 +207,9 @@ class ChatListActivity : AppCompatActivity() {
         }
 
         // we can access the binding class directly from viewBinding object
-        inner class ViewHolder(val binding: ChatListContentBinding) : RecyclerView.ViewHolder(binding.root)
+        inner class ViewHolder(val binding: ChatListContentBinding) : RecyclerView.ViewHolder(
+                binding.root
+        )
 
     }
 }

@@ -39,20 +39,33 @@ class ChatRepository @Inject constructor(private val chatStub: ChatGrpc.ChatBloc
     }
 
     suspend fun readMessage(id: String) = withContext(Dispatchers.Default) {
-        if (id.isNotBlank()) {
-            Log.e("read message", id)
-            val message = ChatOuterClass.Event.newBuilder()
-                    .setMessageRead(ChatOuterClass.MessageRead.newBuilder()
-                            .setMessageId(id)
-                            .setMessageStatus(2)
-                            .build())
-                    .setSenderInfo(ChatOuterClass.SenderInfo.newBuilder()
-                            .setUserid(firebaseAuth.currentUser!!.uid)
-                            .setIsInit(false)
-                            .build())
-                    .build()
-            chatEventStream!!.onNext(message)
-            androidDatabase.messagesQueries.readMessage(id)
+        // sometimes grpc likes to fuck you over and return an error
+        try {
+            if (id.isNotBlank()) {
+                Log.e("read message", id)
+                val message = ChatOuterClass.Event.newBuilder()
+                        .setMessageRead(
+                                ChatOuterClass.MessageRead.newBuilder()
+                                        .setMessageId(id)
+                                        .setMessageStatus(2)
+                                        .build()
+                        )
+                        .setSenderInfo(
+                                ChatOuterClass.SenderInfo.newBuilder()
+                                        .setUserid(firebaseAuth.currentUser!!.uid)
+                                        .setIsInit(false)
+                                        .build()
+                        )
+                        .build()
+                chatEventStream!!.onNext(message)
+                androidDatabase.messagesQueries.readMessage(id)
+            } else {
+
+            }
+        } catch (ex: Exception) {
+            Log.e("readMessage ", ex.toString())
+            // restart the stream
+            eventStream(firebaseAuth.currentUser!!.uid)
         }
     }
 
@@ -244,25 +257,23 @@ class ChatRepository @Inject constructor(private val chatStub: ChatGrpc.ChatBloc
         val requestObserver = chatAsyncStub.eventStream(object : StreamObserver<ChatOuterClass.Event> {
             override fun onNext(value: ChatOuterClass.Event?) {
                 //TODO IMPLEMENT THE OTHER STREAMS
-                if (value?.message != null) {
+                if (value?.hasMessage() == true) {
                     // make sure the message is valid
-                    if (value.message.id != null) {
-                        // insert the new message into local database then post the value to livedata so view can update
-                        if (value.message.media != null) {
-                            val chatId = androidDatabase.chatsQueries.getChatIdByUserId(value.senderInfo.userid).executeAsOne()
-                            androidDatabase.mediaQueries.insertOrReplaceMedia(value.message.media.mediaUrl, value.message.media.mimeType, value.message.media.sizeBytes, value.message.media.mediaUrl, null)
-                            val latestId = androidDatabase.mediaQueries.lastInsertedRowId().executeAsOne()
-                            androidDatabase.messagesQueries.insertOrReplaceMessage(value.message.id, latestId, value.message.message, if (value.message.replyId.isNotBlank()) value.message.replyId else null, if (value.message.isForward) 1 else 0, value.senderInfo.userid, if (value.message.groupId.isNotBlank()) value.message.groupId else null, value.message.datePostedUnixTimestamp, if (value.message.receiverUserId.isNotBlank()) value.message.receiverUserId else null, chatId, value.message.messageStatus.toLong())
-                            val media = Media(value.message.media.mimeType, value.message.media.mediaUrl, value.message.media.sizeBytes)
-                            GlobalScope.launch {
-                                newMessageBroadcastChannel.send(Pair(chatId, Message(value.message.id, if (value.message.replyId.isNotBlank()) value.message.replyId else null, media, value.message.isForward, MessageStatus.values()[value.message.messageStatus], value.message.datePostedUnixTimestamp, value.message.message, if (value.message.receiverUserId.isNotBlank()) userRepository.getUserInfo(value.message.receiverUserId) else null, userRepository.getUserInfo(value.senderInfo.userid))))
-                            }
-                        } else {
-                            val chatId = androidDatabase.chatsQueries.getChatIdByUserId(value.senderInfo.userid).executeAsOne()
-                            androidDatabase.messagesQueries.insertOrReplaceMessage(value.message.id, null, value.message.message, if (value.message.replyId.isNotBlank()) value.message.replyId else null, if (value.message.isForward) 1 else 0, value.senderInfo.userid, if (value.message.groupId.isNotBlank()) value.message.groupId else null, value.message.datePostedUnixTimestamp, if (value.message.receiverUserId.isNotBlank()) value.message.receiverUserId else null, chatId, value.message.messageStatus.toLong())
-                            GlobalScope.launch {
-                                newMessageBroadcastChannel.send(Pair(chatId, Message(value.message.id, if (value.message.replyId.isNotBlank()) value.message.replyId else null, null, value.message.isForward, MessageStatus.values()[value.message.messageStatus], value.message.datePostedUnixTimestamp, value.message.message, if (value.message.receiverUserId.isNotBlank()) userRepository.getUserInfo(value.message.receiverUserId) else null, userRepository.getUserInfo(value.senderInfo.userid))))
-                            }
+                    // insert the new message into local database then post the value to livedata so view can update
+                    if (value.message.media != null) {
+                        val chatId = androidDatabase.chatsQueries.getChatIdByUserId(value.senderInfo.userid).executeAsOne()
+                        androidDatabase.mediaQueries.insertOrReplaceMedia(value.message.media.mediaUrl, value.message.media.mimeType, value.message.media.sizeBytes, value.message.media.mediaUrl, null)
+                        val latestId = androidDatabase.mediaQueries.lastInsertedRowId().executeAsOne()
+                        androidDatabase.messagesQueries.insertOrReplaceMessage(value.message.id, latestId, value.message.message, if (value.message.replyId.isNotBlank()) value.message.replyId else null, if (value.message.isForward) 1 else 0, value.senderInfo.userid, if (value.message.groupId.isNotBlank()) value.message.groupId else null, value.message.datePostedUnixTimestamp, if (value.message.receiverUserId.isNotBlank()) value.message.receiverUserId else null, chatId, value.message.messageStatus.toLong())
+                        val media = Media(value.message.media.mimeType, value.message.media.mediaUrl, value.message.media.sizeBytes)
+                        GlobalScope.launch {
+                            newMessageBroadcastChannel.send(Pair(chatId, Message(value.message.id, if (value.message.replyId.isNotBlank()) value.message.replyId else null, media, value.message.isForward, MessageStatus.values()[value.message.messageStatus], value.message.datePostedUnixTimestamp, value.message.message, if (value.message.receiverUserId.isNotBlank()) userRepository.getUserInfo(value.message.receiverUserId) else null, userRepository.getUserInfo(value.senderInfo.userid))))
+                        }
+                    } else {
+                        val chatId = androidDatabase.chatsQueries.getChatIdByUserId(value.senderInfo.userid).executeAsOne()
+                        androidDatabase.messagesQueries.insertOrReplaceMessage(value.message.id, null, value.message.message, if (value.message.replyId.isNotBlank()) value.message.replyId else null, if (value.message.isForward) 1 else 0, value.senderInfo.userid, if (value.message.groupId.isNotBlank()) value.message.groupId else null, value.message.datePostedUnixTimestamp, if (value.message.receiverUserId.isNotBlank()) value.message.receiverUserId else null, chatId, value.message.messageStatus.toLong())
+                        GlobalScope.launch {
+                            newMessageBroadcastChannel.send(Pair(chatId, Message(value.message.id, if (value.message.replyId.isNotBlank()) value.message.replyId else null, null, value.message.isForward, MessageStatus.values()[value.message.messageStatus], value.message.datePostedUnixTimestamp, value.message.message, if (value.message.receiverUserId.isNotBlank()) userRepository.getUserInfo(value.message.receiverUserId) else null, userRepository.getUserInfo(value.senderInfo.userid))))
                         }
                     }
                 }

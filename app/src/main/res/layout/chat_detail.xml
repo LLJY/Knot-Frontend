@@ -60,6 +60,17 @@
                 app:layout_constraintBottom_toBottomOf="@id/card_image_container"
                 app:layout_constraintStart_toEndOf="@id/card_image_container"
                 app:layout_constraintTop_toTopOf="@id/card_image_container" />
+
+            <ImageButton
+                android:id="@+id/call_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="24dp"
+                android:background="?selectableItemBackground"
+                android:src="@drawable/ic_baseline_phone_24"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.cardview.widget.CardView>
 

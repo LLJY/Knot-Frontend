@@ -8,12 +8,14 @@ import androidx.lifecycle.liveData
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import kotlin.properties.Delegates
 
-class ChatListViewModel @ViewModelInject constructor(val chatRepository: ChatRepository, private val firebaseAuth: FirebaseAuth, private val notificationRepository: NotificationRepository, private val messaging: FirebaseMessaging) : ViewModel() {
+class ChatListViewModel @ViewModelInject constructor(private val signalingRepository: SignalingRepository, val chatRepository: ChatRepository, private val firebaseAuth: FirebaseAuth, private val notificationRepository: NotificationRepository, private val messaging: FirebaseMessaging) : ViewModel() {
     var userId: String = ""
     var isFirstUser by Delegates.notNull<Boolean>()
     private val chatsMutableLiveData: MutableLiveData<List<Chat>> = MutableLiveData()
@@ -36,6 +38,21 @@ class ChatListViewModel @ViewModelInject constructor(val chatRepository: ChatRep
                 chatsMutableLiveData.postValue(chatList)
             }
         }
+    }
+
+    /**
+     * Initiates the event listener for calls
+     */
+    fun signalOfferListener() = liveData(Dispatchers.IO) {
+        signalingRepository.signalOfferFlow.collect {
+            emit(it)
+        }
+    }
+
+    @FlowPreview
+    @ExperimentalCoroutinesApi
+    fun startSignalEventListener() {
+        signalingRepository.startEventListener()
     }
 
     fun updateNotificationToken() = liveData {
